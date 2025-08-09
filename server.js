@@ -8,9 +8,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGO_URL;
 
-app.use(cors({
-  origin: 'http://localhost:5173', // or 3000 if that's where frontend runs
-}));
+const cors = require("cors");
+app.use(cors({ origin: "https://frontend-of-crud-wqo2da6f8-alshaba-akrams-projects.vercel.app" }));
+
 app.use(express.json());
 mongoose.connect('mongodb://localhost:27017/crudshort', { 
 useNewUrlParser: true,
