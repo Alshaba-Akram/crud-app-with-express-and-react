@@ -1,27 +1,55 @@
-
-require('dotenv').config();
-const express = require('express'); 
-const mongoose = require('mongoose'); 
+require('dotenv').config(); // Load environment variables
+const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
+
 const app = express();
 
-const PORT = process.env.PORT || 5000;
-const MONGO_URL = process.env.MONGO_URL;
+// CORS setup with allowed origin and proper error handling
+const allowedOrigin = 'https://frontend-of-crud-wqo2da6f8-alshaba-akrams-projects.vercel.app';
 
-const cors = require("cors");
-app.use(cors({ origin: "https://frontend-of-crud-wqo2da6f8-alshaba-akrams-projects.vercel.app" }));
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like Postman, curl)
+    if (!origin) return callback(null, true);
+    if (origin === allowedOrigin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+}));
+
+// Handle preflight OPTIONS requests
+app.options('*', cors());
 
 app.use(express.json());
-mongoose.connect('mongodb://localhost:27017/crudshort', { 
-useNewUrlParser: true,
-useUnifiedTopology: true,
+
+// Routes
+const itemsRouter = require('./routes/items');
+app.use('/items', itemsRouter);
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.error('MongoDB connection error:', err));
+
+// Error handling middleware (to catch CORS and other errors)
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  if (err.message.includes('CORS')) {
+    return res.status(403).json({ message: err.message });
+  }
+  res.status(500).json({ message: 'Internal Server Error' });
 });
-const Item = mongoose.model('Item', { name: String });
-app.get('/items', (req, res) => { Item.find().then(data => res.json(data)); });
-app.post('/items', (req, res) => {
-new Item({ name: req.body.name }).save().then(data => res.json(data)); });
-app.put('/items/:id', (req, res) => {
-Item.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true }) .then(data => res.json(data));
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
-app.delete('/items/:id', (req, res) => { Item.findByIdAndDelete(req.params.id).then(() => res.json({ success: true })); });
-app.listen(5000, () => console.log('http://localhost:5000'));
